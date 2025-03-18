@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facial Emotion Recognition</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+        #webcam, #upload {
+            margin: 20px;
+        }
+        #result {
+            margin-top: 20px;
+            font-size: 1.5em;
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <h1>Facial Emotion Recognition</h1>
+    <div>
+        <button id="webcam">Use Webcam</button>
+        <button id="upload">Upload Image</button>
+    </div>
+    <div id="webcam-container" style="display: none;">
+        <video id="video" width="320" height="240" autoplay></video>
+        <button id="capture">Capture</button>
+    </div>
+    <div id="upload-container" style="display: none;">
+        <input type="file" id="file" accept="image/*">
+    </div>
+    <div id="result"></div>
+
+    <script>
+        // Webcam setup
+        const video = document.getElementById('video');
+        const webcamButton = document.getElementById('webcam');
+        const uploadButton = document.getElementById('upload');
+        const webcamContainer = document.getElementById('webcam-container');
+        const uploadContainer = document.getElementById('upload-container');
+        const captureButton = document.getElementById('capture');
+        const fileInput = document.getElementById('file');
+        const resultDiv = document.getElementById('result');
+
+        // Show webcam feed
+        webcamButton.addEventListener('click', async () => {
+            uploadContainer.style.display = 'none';
+            webcamContainer.style.display = 'block';
+
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            video.srcObject = stream;
+        });
+
+        // Capture image from webcam
+        captureButton.addEventListener('click', () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            const image = canvas.toDataURL('image/jpeg');
+            sendImageToServer(image, 'webcam');
+        });
+
+        // Handle image upload
+        uploadButton.addEventListener('click', () => {
+            webcamContainer.style.display = 'none';
+            uploadContainer.style.display = 'block';
+        });
+
+        fileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    sendImageToServer(e.target.result, 'upload');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Send image to the server for prediction
+        function sendImageToServer(image, type) {
+            resultDiv.textContent = 'Predicting emotion...';
+
+            if (type === 'webcam') {
+                fetch('/webcam', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ image: image }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    resultDiv.textContent = `Predicted Emotion: ${data.emotion}`;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    resultDiv.textContent = 'Error predicting emotion';
+                });
+            } else if (type === 'upload') {
+                const formData = new FormData();
+                formData.append('file', fileInput.files[0]);
+
+                fetch('/upload', {
+                    method: 'POST',
+                    body: formData,
+                })
+                .then(response => response.json())
+                .then(data => {
+                    resultDiv.textContent = `Predicted Emotion: ${data.emotion}`;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    resultDiv.textContent = 'Error predicting emotion';
+                });
+            }
+        }
+    </script>
+</body>
+</html>
