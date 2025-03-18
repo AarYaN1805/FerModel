@@ -65,5 +65,31 @@ def webcam():
     emotion = predict_emotion(face)
     return jsonify({'emotion': emotion})
 
+# Route to handle image upload
+@app.route('/upload', methods=['POST'])
+def upload():
+    try:
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file uploaded'}), 400
+
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+
+        # Read the image file
+        img = cv2.imdecode(np.frombuffer(file.read(), np.uint8), cv2.IMREAD_COLOR)
+
+        # Detect face
+        face = detect_face(img)
+        if face is None:
+            return jsonify({'error': 'No face detected'}), 400
+
+        # Predict emotion
+        emotion = predict_emotion(face)
+        return jsonify({'emotion': emotion})
+    except Exception as e:
+        print("Error in /upload route:", str(e))  # Debug statement
+        return jsonify({'error': 'Internal server error'}), 500
+
 if __name__ == '__main__':
     app.run(debug=True)
