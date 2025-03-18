@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, send_from_directory, request, jsonify
 import cv2
 import numpy as np
 from keras.models import load_model
@@ -43,7 +43,7 @@ def predict_emotion(img):
 # Route for the home page
 @app.route('/')
 def home():
-    return render_template('index.html')
+    return send_from_directory('.', 'index.html')  # Serve index.html from the root directory
 
 # Route to handle webcam image
 @app.route('/webcam', methods=['POST'])
